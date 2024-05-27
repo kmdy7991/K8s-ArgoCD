@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: spring-cloud-gate
+    labels:
+        app: spring-cloud-gate
+    namespace: allclear
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: spring-cloud-gate
+    template:
+        metadata:
+            labels:
+                app: spring-cloud-gate
+        spec:
+            affinity:
+                podAntiAffinity:
+                    preferredDuringSchedulingIgnoredDuringExecution:
+                        - podAffinityTerm:
+                              labelSelector:
+                                  matchExpressions:
+                                      - key: key
+                                        operator: In
+                                        values:
+                                            - worker2
+                              topologyKey: kubernetes.io/hostname
+                          weight: 100
+            imagePullSecrets:
+                - name: registry
+            containers:
+                - name: gate
+                  image: kmdy7991/gateways:latest
+                  env:
+                      - name: JAVA_TOOL_OPTIONS
+                        value: '-Duser.timezone=Asia/Seoul'
+                  imagePullPolicy: Always
+                  ports:
+                      - containerPort: 3021
+                  envFrom:
+                      - configMapRef:
+                            name: spring
+                  # readinessProbe:
+                  #     httpGet:
+                  #         path: /actuator/health/readiness
+                  #         port: 8080
+                  #     initialDelaySeconds: 10
+                  #     periodSeconds: 20
+                  # livenessProbe:
+                  #     httpGet:
+                  #         path: /actuator/health/liveness
+                  #         port: 8080
+                  #     initialDelaySeconds: 20
+                  #     periodSeconds: 20
+                  resources:
+                      requests:
+                          memory: 256Mi
+                      limits:
+                          memory: 512Mi
